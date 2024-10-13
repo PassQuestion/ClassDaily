@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"math/rand"
+	"os"
 	"strconv"
 	"time"
 
@@ -73,6 +75,119 @@ func random_window() {
 			Size:     Size{300, 200},
 			Children: widget2,
 		}.Run()
+		fmt.Println(window2pointer.Visible())
+	}
+
+}
+func set_class(date int, class int, name string) {
+	classlist := etree.NewDocument()
+	if err := classlist.ReadFromFile("./class.xml"); err != nil {
+		walk.MsgBox(walk.App().ActiveForm(), "无法加载课表", "课表加载失败。请保证课表文件（class.xml）加载正确。", walk.MsgBoxIconError)
+	}
+	rootelement := classlist.SelectElement("root")
+	dayselement := rootelement.FindElement("Days")
+	var dayelement *etree.Element
+	switch date {
+
+	case int(time.Monday):
+		dayelement = dayselement.FindElement("Day[@ID='d1']")
+	case int(time.Tuesday):
+		dayelement = dayselement.FindElement("Day[@ID='d2']")
+	case int(time.Wednesday):
+		dayelement = dayselement.FindElement(`./Day[@ID="d3"]`)
+	case int(time.Thursday):
+		dayelement = dayselement.FindElement(`./Day[@ID="d4"]`)
+	case int(time.Friday):
+		dayelement = dayselement.FindElement(`./Day[@ID="d5"]`)
+
+	}
+	var classelement *etree.Element
+	switch class {
+	case 1:
+		classelement = dayelement.FindElement("./Class[@ID='l1']/name")
+	case 2:
+		classelement = dayelement.FindElement("./Class[@ID='l2']/name")
+	case 3:
+		classelement = dayelement.FindElement("./Class[@ID='l3']/name")
+	case 4:
+		classelement = dayelement.FindElement("./Class[@ID='l4']/name")
+	case 5:
+		classelement = dayelement.FindElement("./Class[@ID='l5']/name")
+	case 6:
+		classelement = dayelement.FindElement("./Class[@ID='l6']/name")
+	case 7:
+		classelement = dayelement.FindElement("./Class[@ID='l7']/name")
+	case 8:
+		classelement = dayelement.FindElement("./Class[@ID='l8']/name")
+	case 9:
+		classelement = dayelement.FindElement("./Class[@ID='l9']/name")
+
+	}
+	classelement.SetText(name)
+	file, openerr := os.OpenFile("./class.xml", os.O_RDWR, 0)
+	if openerr != nil {
+		walk.MsgBox(walk.App().ActiveForm(), "写入错误", "修改错误。请检查class.xml是否存在。", walk.MsgBoxIconError)
+		return
+	}
+	resultstring, err := classlist.WriteToString()
+	if err != nil {
+		walk.MsgBox(walk.App().ActiveForm(), "写入错误", "修改错误", walk.MsgBoxIconError)
+	}
+	file.WriteString(resultstring)
+}
+func setting_window() {
+
+	daylabel := Label{
+		Text:      "星期",
+		Alignment: AlignHCenterVCenter,
+	}
+	var daylistboxptr *walk.ComboBox
+	daylistbox := ComboBox{
+		Model:        []string{"一", "二", "三", "四", "五"},
+		CurrentIndex: 0,
+		AssignTo:     &daylistboxptr,
+	}
+	classlabel := Label{
+		Text:      "的第",
+		Alignment: AlignHCenterVCenter,
+	}
+	var classlistboxptr *walk.ComboBox
+	classlistbox := ComboBox{
+		Model:        []string{"1", "2", "3", "4", "5", "6", "7", "8", "9"},
+		CurrentIndex: 0,
+		AssignTo:     &classlistboxptr,
+	}
+	changelabel := Label{
+		Text: "节课更改为",
+	}
+	var nameboxptr *walk.ComboBox
+	a := []string{" 语文 ", " 数学 ", " 英语 ", " 物理 ", " 化学 ", " 生物 ", " 政治 ", " 通用技术 ", " 信息技术 ", " 音乐^美术 ", " 自习 ", " 校本课程 ", " 班会 "}
+	namebox := ComboBox{
+		Model:        []string{"语文", "数学", "英语", "物理", "化学", "生物", "政治", "通用技术", "信息技术", "音乐^美术", "自习", "校本课程", "班会"},
+		CurrentIndex: 0,
+		AssignTo:     &nameboxptr,
+	}
+	surebutton := PushButton{
+		Text: "确定",
+		OnClicked: func() {
+			fmt.Println(nameboxptr.DisplayMember())
+			fmt.Println(nameboxptr.BindingMember())
+			set_class(daylistboxptr.CurrentIndex()+1, classlistboxptr.CurrentIndex()+1, a[nameboxptr.CurrentIndex()])
+		},
+	}
+	widget3 := []Widget{
+		daylabel, daylistbox, classlabel, classlistbox, changelabel, namebox, surebutton,
+	}
+	wd3ptr, err := walk.NewMainWindow()
+	if err == nil {
+		wd3 := MainWindow{
+			AssignTo: &wd3ptr,
+			Title:    "设置",
+			Layout:   HBox{},
+			Size:     Size{500, 100},
+			Children: widget3,
+		}
+		wd3.Run()
 	}
 
 }
@@ -162,6 +277,10 @@ func main() {
 	stringBuilder.WriteString(str1)
 	stringBuilder.WriteString(str2)
 	rootwindow := new(hwnd)
+	icon, iconerr := walk.NewIconFromFile("./icon.ico")
+	if iconerr != nil {
+		icon = walk.IconApplication()
+	}
 	a := stringBuilder.String()
 	date := Label{
 		Text: a,
@@ -214,7 +333,8 @@ func main() {
 	Settingbutton := PushButton{
 		Text: "设置",
 		OnClicked: func() {
-			walk.MsgBox(rootwindow, "未开发-设置", "以后会将此区域改为课表修改区", walk.MsgBoxOK)
+			fmt.Println("clicked")
+			setting_window()
 		},
 	}
 	Randombutton := PushButton{
@@ -233,6 +353,7 @@ func main() {
 			"微软雅黑", 20, false, false, false, false,
 		},
 		Children: widget,
+		Icon:     icon,
 	}
 	wd1.Run()
 }
