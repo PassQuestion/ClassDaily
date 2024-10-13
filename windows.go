@@ -13,7 +13,7 @@ import (
 
 const (
 	WIDTH  = 320
-	HEIGHT = 700
+	HEIGHT = 820
 )
 
 type hwnd struct {
@@ -40,7 +40,7 @@ func random_window() {
 	var students_number_line *walk.LineEdit
 	students_number := LineEdit{
 		AssignTo:  &students_number_line,
-		Text:      Bind("请输入学生总数"),
+		Text:      "请输入学生总数",
 		TextColor: walk.Color(walk.RGB(100, 100, 100)),
 		MaxLength: 5,
 	}
@@ -70,6 +70,7 @@ func random_window() {
 			AssignTo: &window2pointer,
 			Title:    "随机数",
 			Layout:   VBox{},
+			Size:     Size{300, 200},
 			Children: widget2,
 		}.Run()
 	}
@@ -77,24 +78,25 @@ func random_window() {
 }
 func get_class(date int, class int) string {
 	classlist := etree.NewDocument()
-	if err := classlist.ReadFromFile("class.xml"); err == nil {
+	if err := classlist.ReadFromFile("./class.xml"); err != nil {
 		walk.MsgBox(walk.App().ActiveForm(), "无法加载课表", "课表加载失败。请保证课表文件（class.xml）加载正确。", walk.MsgBoxOK)
 	}
-	rootelement := classlist.SelectElement("Days")
+	rootelement := classlist.SelectElement("root")
+	rootelement = rootelement.FindElement("Days")
 	var dayelement *etree.Element
 	switch date {
 	case int(time.Sunday):
 		return "今日无课"
 	case int(time.Monday):
-		dayelement = rootelement.FindElement("./Day[@id='d1']")
+		dayelement = rootelement.FindElement("Day[@ID='d1']")
 	case int(time.Tuesday):
-		dayelement = rootelement.FindElement("./Day[@id='d2']")
+		dayelement = rootelement.FindElement("Day[@ID='d2']")
 	case int(time.Wednesday):
-		dayelement = rootelement.FindElement("./Day[@id='d3']")
+		dayelement = rootelement.FindElement(`./Day[@ID="d3"]`)
 	case int(time.Thursday):
-		dayelement = rootelement.FindElement("./Day[@id='d4']")
+		dayelement = rootelement.FindElement(`./Day[@ID="d4"]`)
 	case int(time.Friday):
-		dayelement = rootelement.FindElement("./Day[@id='d5']")
+		dayelement = rootelement.FindElement(`./Day[@ID="d5"]`)
 	case int(time.Saturday):
 		return "今日无课"
 
@@ -102,23 +104,23 @@ func get_class(date int, class int) string {
 	var classelement *etree.Element
 	switch class {
 	case 1:
-		classelement = dayelement.FindElement("./Class[@id='l1']name")
+		classelement = dayelement.FindElement("./Class[@ID='l1']/name")
 	case 2:
-		classelement = dayelement.FindElement("./Class[@id='l2']name")
+		classelement = dayelement.FindElement("./Class[@ID='l2']/name")
 	case 3:
-		classelement = dayelement.FindElement("./Class[@id='l3']name")
+		classelement = dayelement.FindElement("./Class[@ID='l3']/name")
 	case 4:
-		classelement = dayelement.FindElement("./Class[@id='l4']/name")
+		classelement = dayelement.FindElement("./Class[@ID='l4']/name")
 	case 5:
-		classelement = dayelement.FindElement("./Class[@id='l5']/name")
+		classelement = dayelement.FindElement("./Class[@ID='l5']/name")
 	case 6:
-		classelement = dayelement.FindElement("./Class[@id='l6']/name")
+		classelement = dayelement.FindElement("./Class[@ID='l6']/name")
 	case 7:
-		classelement = dayelement.FindElement("./Class[@id='l7']/name")
+		classelement = dayelement.FindElement("./Class[@ID='l7']/name")
 	case 8:
-		classelement = dayelement.FindElement("./Class[@id='l8']/name")
+		classelement = dayelement.FindElement("./Class[@ID='l8']/name")
 	case 9:
-		classelement = dayelement.FindElement("./Class[@id='l9']/name")
+		classelement = dayelement.FindElement("./Class[@ID='l9']/name")
 
 	}
 	return classelement.Text()
@@ -143,7 +145,17 @@ func date_to_string(get_date int) string {
 	}
 	return "时间错误"
 }
+func backcode() {
+	for {
+		nowhour, nowmin, nowsecond := time.Now().Clock()
+		if nowhour == 10 && nowmin == 15 && nowsecond == 00 {
+			walk.MsgBox(walk.App().ActiveForm(), "下课了", "老师，这节课下楼做操，请您尽早下课", walk.MsgBoxOK)
+		}
+	}
+
+}
 func main() {
+	go backcode()
 	str1 := "今天星期"
 	str2 := date_to_string(get_date())
 	var stringBuilder bytes.Buffer
@@ -215,11 +227,12 @@ func main() {
 	wd1 := MainWindow{
 		AssignTo: &rootwindow.MainWindow,
 		Title:    "电子值日生",
-		MaxSize:  Size{WIDTH, HEIGHT},
-		MinSize:  Size{WIDTH, HEIGHT},
+		Size:     Size{WIDTH, HEIGHT},
 		Layout:   VBox{},
+		Font: Font{
+			"微软雅黑", 20, false, false, false, false,
+		},
 		Children: widget,
 	}
-
 	wd1.Run()
 }

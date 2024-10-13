@@ -1,6 +1,6 @@
-<?xml version="1.0" encoding = "UTF-8"?>
+<?xml version="1.0" encoding="ISO-8859-1"?>
 <root>
-<ClassList>
+<List>
 <Class ID="1">
 <name> 语文 </name>
 </Class>
@@ -33,18 +33,19 @@
 </Class>
 <Class ID="11">
 <name> 体育 </name>
+</Class>
 <Class ID="12">
 <name> 自习 </name>
+</Class>
 <Class ID="13">
 <name> 校本课程 </name>
 </Class>
 <Class ID="14">
 <name> 班会 </name>
 </Class>
-</ClassList>
+</List>
 <Days>
 <Day ID = "d1">
-<Classes> 
 <Class ID = "l1">
 <name> 数学 </name>
 </Class>
@@ -83,7 +84,7 @@
 <Class ID = "l3">
 <name> 数学 </name>
 </Class>
-<Class ID = "l4"
+<Class ID = "l4">
 <name> 数学 </name>
 </Class>
 <Class ID = "l5">
