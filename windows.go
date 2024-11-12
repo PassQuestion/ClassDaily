@@ -1,3 +1,9 @@
+/*
+	前辈您好，我是这段程序的编写者彭思齐。由于学业压力过大，这一个学校思维节的项目可能要停止开发。但是一些模块还没有写完，比如说布置作业模块。这个程序采用golang编写，
+
+是为了使得程序较python更快，更小，采用golang的WindowsGUI库walk。但是由于golang未在学生群体中普及，所以现在没有人帮我继续开发，希望您能将布置作业的模块修改跑通，
+您修改后的版本会成为最终程序的1.0版本。谢谢前辈。
+*/
 package main
 
 import (
@@ -5,6 +11,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"os/exec"
 	"strconv"
 	"time"
 
@@ -13,9 +20,10 @@ import (
 	. "github.com/lxn/walk/declarative"
 )
 
+/*定义主窗口大小*/
 const (
 	WIDTH  = 320
-	HEIGHT = 820
+	HEIGHT = 720
 )
 
 type hwnd struct {
@@ -23,34 +31,31 @@ type hwnd struct {
 }
 
 func get_rand(max int) int64 {
-	rand.New(rand.NewSource(time.Now().UnixNano()))
-	random_number := rand.Intn(max)
-	for random_number == 0 {
-		random_number = rand.Intn(max)
+	rand.New(rand.NewSource(time.Now().UnixNano())) //随机数种子
+	random_number := rand.Intn(max + 1)             // 生成最大为 输入max的随机数
+	for random_number == 0 {                        //防0模块
+		random_number = rand.Intn(max + 1)
 	}
-	return int64(random_number)
+	return int64(random_number) //rand必须返回int64类型
 }
-func get_date() int {
+func get_date() int { //查找今天星期几
 	current := time.Now()
 	date := current.Weekday()
 	return int(date)
 }
-func random_window() {
-	type TE struct {
-		*walk.TextEdit
-	}
+func random_window() { //随机数生成窗口，现在已被同伴的python编译程序（即第597行的Random.exe）替代
 	var students_number_line *walk.LineEdit
 	students_number := LineEdit{
 		AssignTo:  &students_number_line,
 		Text:      "请输入学生总数",
 		TextColor: walk.Color(walk.RGB(100, 100, 100)),
 		MaxLength: 5,
-	}
+	} //使用lineedit而不是numberedit是为了兼容字符串输入
 	var rand int64
 	var resultpointer *walk.TextEdit
 	randombutton := PushButton{
 		Text: "生成",
-		OnClicked: func() {
+		OnClicked: func() { //按钮点击 ——> 生成随机数（string转int进入函数get_rand，int64转回string输出）
 			maxstudent, err := strconv.Atoi(students_number_line.Text())
 			if err == nil {
 				rand = get_rand(maxstudent)
@@ -67,6 +72,7 @@ func random_window() {
 		students_number, randombutton, resulttext,
 	}
 	window2pointer, e := walk.NewMainWindow()
+
 	if e == nil {
 		MainWindow{
 			AssignTo: &window2pointer,
@@ -74,20 +80,20 @@ func random_window() {
 			Layout:   VBox{},
 			Size:     Size{300, 200},
 			Children: widget2,
-		}.Run()
-		fmt.Println(window2pointer.Visible())
+		}.Create()
+
 	}
 
 }
-func set_class(date int, class int, name string) {
-	classlist := etree.NewDocument()
+func set_class(date int, class int, name string) { //set_class函数，第二阶段开发的核心内容 缺点：太多switch
+	classlist := etree.NewDocument() //etree库开始使用，这两句代码是使用etree 加载class.xml文件
 	if err := classlist.ReadFromFile("./class.xml"); err != nil {
-		walk.MsgBox(walk.App().ActiveForm(), "无法加载课表", "课表加载失败。请保证课表文件（class.xml）加载正确。", walk.MsgBoxIconError)
+		walk.MsgBox(walk.App().ActiveForm(), "无法加载课表", "课表加载失败。请保证课表文件（class.xml）加载正确。", walk.MsgBoxIconError) //！！！class.xml文件不存在就会报错，循环报错，只能kill
 	}
-	rootelement := classlist.SelectElement("root")
-	dayselement := rootelement.FindElement("Days")
-	var dayelement *etree.Element
-	switch date {
+	rootelement := classlist.SelectElement("root") //设置根节点
+	dayselement := rootelement.FindElement("Days") //设置节点days，这一部分应参考class.xml文件的格式
+	var dayelement *etree.Element                  //设置节点day
+	switch date {                                  //将date对应星期1234567
 
 	case int(time.Monday):
 		dayelement = dayselement.FindElement("Day[@ID='d1']")
@@ -102,7 +108,7 @@ func set_class(date int, class int, name string) {
 
 	}
 	var classelement *etree.Element
-	switch class {
+	switch class { //class对应123456789节课
 	case 1:
 		classelement = dayelement.FindElement("./Class[@ID='l1']/name")
 	case 2:
@@ -123,7 +129,7 @@ func set_class(date int, class int, name string) {
 		classelement = dayelement.FindElement("./Class[@ID='l9']/name")
 
 	}
-	classelement.SetText(name)
+	classelement.SetText(name) //将name修改
 	file, openerr := os.OpenFile("./class.xml", os.O_RDWR, 0)
 	if openerr != nil {
 		walk.MsgBox(walk.App().ActiveForm(), "写入错误", "修改错误。请检查class.xml是否存在。", walk.MsgBoxIconError)
@@ -133,10 +139,10 @@ func set_class(date int, class int, name string) {
 	if err != nil {
 		walk.MsgBox(walk.App().ActiveForm(), "写入错误", "修改错误", walk.MsgBoxIconError)
 	}
-	file.WriteString(resultstring)
+	file.WriteString(resultstring) //写入文件，多次点击会出问题
 }
-func setting_window() {
-
+func setting_window() { //setting_window函数，第二阶段的成果 启动在第589行里有定义 格式：星期 x 的第 y 节课更改为 z
+	wd3ptr, err := walk.NewMainWindow()
 	daylabel := Label{
 		Text:      "星期",
 		Alignment: AlignHCenterVCenter,
@@ -161,7 +167,7 @@ func setting_window() {
 		Text: "节课更改为",
 	}
 	var nameboxptr *walk.ComboBox
-	a := []string{" 语文 ", " 数学 ", " 英语 ", " 物理 ", " 化学 ", " 生物 ", " 政治 ", " 通用技术 ", " 信息技术 ", " 音乐^美术 ", " 自习 ", " 校本课程 ", " 班会 "}
+	a := []string{" 语文 ", " 数学 ", " 英语 ", " 物理 ", " 化学 ", " 生物 ", " 政治 ", " 通用技术 ", " 信息技术 ", " 音乐^美术 ", " 自习 ", " 校本课程 ", " 班会 "} //一共13节课，地理，历史未包含 这里字符串的空格是兼容class.xml
 	namebox := ComboBox{
 		Model:        []string{"语文", "数学", "英语", "物理", "化学", "生物", "政治", "通用技术", "信息技术", "音乐^美术", "自习", "校本课程", "班会"},
 		CurrentIndex: 0,
@@ -170,15 +176,13 @@ func setting_window() {
 	surebutton := PushButton{
 		Text: "确定",
 		OnClicked: func() {
-			fmt.Println(nameboxptr.DisplayMember())
-			fmt.Println(nameboxptr.BindingMember())
-			set_class(daylistboxptr.CurrentIndex()+1, classlistboxptr.CurrentIndex()+1, a[nameboxptr.CurrentIndex()])
+			set_class(daylistboxptr.CurrentIndex()+1, classlistboxptr.CurrentIndex()+1, a[nameboxptr.CurrentIndex()]) //调用set_class函数
+			wd3ptr.Close()                                                                                            //将窗口关闭以免再次点击
 		},
 	}
 	widget3 := []Widget{
 		daylabel, daylistbox, classlabel, classlistbox, changelabel, namebox, surebutton,
 	}
-	wd3ptr, err := walk.NewMainWindow()
 	if err == nil {
 		wd3 := MainWindow{
 			AssignTo: &wd3ptr,
@@ -191,7 +195,281 @@ func setting_window() {
 	}
 
 }
-func get_class(date int, class int) string {
+
+/*布置作业模块 第三阶段开发的核心内容，但是控件的指针调用总出问题，希望前辈能够将指针修改正确使这一功能运行*/
+type homeworkitem struct { //定义struct类型，对应每一项作业 格式：“作业项” n页 备注：备注内容（如不写第xx题等）
+	checkbox    CheckBox
+	checkboxptr *walk.CheckBox
+	pagebox     ComboBox
+	pageboxptr  *walk.ComboBox
+	noteline    LineEdit
+	notelineptr *walk.LineEdit
+	pagelabel   Label
+	widget      []Widget
+	checkstatus bool
+}
+
+func create_homework_item(name string) homeworkitem {
+	bl := false
+	homeworkcheckptr := new(walk.CheckBox)
+	homeworkbox := CheckBox{
+		AssignTo:       &homeworkcheckptr,
+		TextOnLeftSide: true,
+		Text:           name,
+		Name:           name,
+		Checked:        false,
+	}
+	bl = homeworkcheckptr.Checked()
+	pageboxptr := new(walk.ComboBox)
+	pagebox := ComboBox{
+		AssignTo:     &pageboxptr,
+		CurrentIndex: 1,
+		Model:        []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"}, //定义最高20页页数
+	}
+	notelineptr := new(walk.LineEdit)
+	noteline := LineEdit{
+		AssignTo: &notelineptr,
+		ReadOnly: false,
+	}
+	widget := []Widget{
+		homeworkbox, pagebox, noteline,
+	}
+	item := homeworkitem{
+		checkbox:    homeworkbox,
+		checkboxptr: homeworkcheckptr,
+		pagebox:     pagebox,
+		pageboxptr:  pageboxptr,
+		noteline:    noteline,
+		notelineptr: notelineptr,
+		pagelabel:   Label{Text: "页 备注："},
+		widget:      widget,
+		checkstatus: bl,
+	}
+	return item
+}
+
+type testpaper struct {
+	testepaperbox CheckBox
+	pagebox       ComboBox
+	label         Label
+	noteline      LineEdit
+}
+
+func create_testpaper() testpaper {
+	testpaperbox := CheckBox{
+		Text:    "试卷",
+		Checked: false,
+	}
+	pagebox := ComboBox{
+		Model: []string{"1", "2", "3", "4", "5", "6"},
+	}
+	label := Label{
+		Text: "张 备注：",
+	}
+	noteline := LineEdit{
+		ReadOnly: false,
+	}
+	item := testpaper{
+		testepaperbox: testpaperbox,
+		pagebox:       pagebox,
+		label:         label,
+		noteline:      noteline,
+	}
+	return item
+}
+func sub_to_string(subject int) string {
+	switch subject {
+	case 1:
+		{
+			return "语文"
+		}
+	case 2:
+		{
+			return "数学"
+		}
+	case 3:
+		{
+			return "英语"
+		}
+	case 4:
+		{
+			return "物理"
+		}
+	case 5:
+		{
+			return "化学"
+		}
+	case 6:
+		{
+			return "生物"
+		}
+	case 7:
+		{
+			return "政治"
+		}
+	}
+	return "其他"
+}
+
+var checkboxptr = new(walk.CheckBox)
+
+func homework_window(subject int) {
+	wd5ptr, err := walk.NewMainWindow()
+	dynaticwidget := []Widget{}
+	homeworkitems := make([]homeworkitem, 0)
+	var widgetitem []Widget
+	var hsp HSplitter
+	h := 0
+	/* 添加作业项 */
+	if subject == 0 {
+		homeworkitems = append(homeworkitems, create_homework_item("高考调研"))
+		h += 40
+		homeworkitems = append(homeworkitems, create_homework_item("能力风暴"))
+		h += 40
+		homeworkitems = append(homeworkitems, create_homework_item("晨读晚练"))
+		h += 40 //h即窗口高度，每添加一项作业加40像素
+	} else if subject == 1 {
+		homeworkitems = append(homeworkitems, create_homework_item("课时精练"))
+		h += 40
+	} else if subject == 2 {
+		homeworkitems = append(homeworkitems, create_homework_item("高考英语 天天练"))
+		h += 40
+		homeworkitems = append(homeworkitems, create_homework_item("一线课堂"))
+		h += 40
+	} else if subject == 3 {
+		homeworkitems = append(homeworkitems, create_homework_item("步步高 学习笔记（物理）"))
+		h += 40
+		homeworkitems = append(homeworkitems, create_homework_item("步步高 练透（物理）"))
+		h += 40
+		homeworkitems = append(homeworkitems, create_homework_item("试吧（化学）"))
+		h += 40
+	} else if subject == 4 {
+		homeworkitems = append(homeworkitems, create_homework_item("步步高 学习笔记（化学）"))
+		h += 40
+		homeworkitems = append(homeworkitems, create_homework_item("步步高 练透（化学）"))
+		h += 40
+		homeworkitems = append(homeworkitems, create_homework_item("试吧（化学）"))
+		h += 40
+	} else if subject == 5 {
+		homeworkitems = append(homeworkitems, create_homework_item("步步高 学习笔记（生物）"))
+		h += 40
+		homeworkitems = append(homeworkitems, create_homework_item("步步高 练透（生物）"))
+		h += 40
+	} // 添加作业结束
+	for i := 0; i < len(homeworkitems); i += 1 {
+		widgetitem = []Widget{
+			homeworkitems[i].checkbox, homeworkitems[i].pagebox, homeworkitems[i].pagelabel, homeworkitems[i].noteline,
+		}
+		hsp = HSplitter{
+			Children:  widgetitem,
+			Alignment: AlignHCenterVCenter,
+		}
+		dynaticwidget = append(dynaticwidget, hsp)
+		h += 40
+	}
+	paper := create_testpaper()
+	widgetitem2 := []Widget{
+		paper.testepaperbox, paper.pagebox, paper.label, paper.noteline,
+	}
+	hsppaper := HSplitter{
+		Children: widgetitem2,
+	}
+	dynaticwidget = append(dynaticwidget, hsppaper)
+	surebutton := PushButton{
+		Text: "确定",
+		OnClicked: func() {
+			datefilestring, err := os.ReadFile("./date")
+			if err != nil {
+				walk.MsgBox(walk.App().ActiveForm(), "日期文件错误", "请创建一个名为date的文件。", walk.MsgBoxOK)
+				return
+			}
+			y, m, d := time.Now().Date()
+			datestring := fmt.Sprintf("%d%d%d", y, m, d)
+			if string(datefilestring) != datestring {
+				os.Create("./homework")
+				os.Create("./date") //若点击按钮日期等于上次点击按钮日期，则清空上次文件（create方法）
+			}
+			homeworkfile, err1 := os.OpenFile("./homework", os.O_RDWR, 0644)
+			if err1 != nil {
+				walk.MsgBox(walk.App().ActiveForm(), "作业文件错误", "请创建一个名为homework的文件。", walk.MsgBoxOK)
+				return
+			}
+			defer homeworkfile.Close()
+			var homeworkstr string
+			var page string
+
+			homeworkstr = sub_to_string(subject+1) + "\n"
+			for j := 0; j < len(homeworkitems); j += 1 {
+				checkboxptr = homeworkitems[j].checkboxptr
+				homeworkitems[j].pagebox.AssignTo = &homeworkitems[j].pageboxptr
+				homeworkitems[j].noteline.AssignTo = &homeworkitems[j].notelineptr
+				if checkboxptr.Checked() { //如果对应作业的checkbox被选中
+					homeworkstr += homeworkitems[j].checkbox.Name
+					page = fmt.Sprintf("%d", homeworkitems[j].pageboxptr.CurrentIndex()+1)
+					homeworkstr += page
+					homeworkstr += "页"
+					homeworkstr += homeworkitems[j].notelineptr.Text()
+					homeworkstr += "\n" //则加字符串：格式为 {作业} {n}页 {备注} 换行
+				}
+			}
+			homeworkfile.WriteString(homeworkstr)
+			wd5ptr.Close()
+		},
+	}
+	dynaticwidget = append(dynaticwidget, surebutton)
+	if err == nil {
+		MainWindow{
+			AssignTo: &wd5ptr,
+			Title:    "作业布置",
+			Size:     Size{500, h},
+			Layout:   VBox{},
+			Children: dynaticwidget,
+		}.Run()
+	}
+
+}
+func seat_window() {
+	seatwinptr := new(walk.MainWindow)
+	num1ptr := new(walk.NumberEdit)
+	num1 := NumberEdit{
+		AssignTo: &num1ptr,
+	}
+	labelline := Label{Text: "行"}
+	num2ptr := new(walk.NumberEdit)
+	num2 := NumberEdit{
+		AssignTo: &num2ptr,
+	}
+	labelcolumn := Label{Text: "列共"}
+	num3ptr := new(walk.NumberEdit)
+	num3 := NumberEdit{
+		AssignTo: &num3ptr,
+	}
+	labelpeople := Label{Text: "人"}
+	callbutton := PushButton{
+		Text: "确定",
+		OnClicked: func() {
+			line := fmt.Sprintf("%d", int64(num1ptr.Value()))
+			column := fmt.Sprintf("%d", int64(num2ptr.Value()))
+			people := fmt.Sprintf("%d", int64(num3ptr.Value()))
+			fmt.Println(line, column, people)
+			cmd2 := exec.Command("./selectseat.exe", people, line, column)
+			cmd2.Run()
+			seatwinptr.Close()
+		},
+	}
+	widget6 := []Widget{
+		num1, labelline, num2, labelcolumn, num3, labelpeople, callbutton,
+	}
+	wd6 := MainWindow{
+		AssignTo: &seatwinptr,
+		Title:    "创建座位",
+		Size:     Size{200, 100},
+		Layout:   HBox{},
+		Children: widget6,
+	}
+	wd6.Run()
+}
+func get_class(date int, class int) string { //get_class函数，第一阶段开发的核心内容，和set_class函数的查找部分思路一致
 	classlist := etree.NewDocument()
 	if err := classlist.ReadFromFile("./class.xml"); err != nil {
 		walk.MsgBox(walk.App().ActiveForm(), "无法加载课表", "课表加载失败。请保证课表文件（class.xml）加载正确。", walk.MsgBoxOK)
@@ -241,7 +519,12 @@ func get_class(date int, class int) string {
 	return classelement.Text()
 
 }
-
+func create_label(classes int) Label {
+	return Label{
+		Text:          get_class(get_date(), classes),
+		TextAlignment: AlignCenter,
+	}
+}
 func date_to_string(get_date int) string {
 	if get_date == int(time.Sunday) {
 		return "日"
@@ -260,7 +543,38 @@ func date_to_string(get_date int) string {
 	}
 	return "时间错误"
 }
-func backcode() {
+
+func choose_homework_window() {
+	chooselabel := Label{
+		Text: "请选择科目：",
+	}
+	var subjectboxptr *walk.ComboBox
+	subjectbox := ComboBox{
+		AssignTo: &subjectboxptr,
+		Model:    []string{"语文", "数学", "英语", "物理", "化学", "生物", "政治"},
+	}
+	var newwinbuttonptr *walk.PushButton
+	newwinbutton := PushButton{
+		AssignTo:  &newwinbuttonptr,
+		Text:      "确定",
+		OnClicked: func() { homework_window(subjectboxptr.CurrentIndex()) },
+	}
+	widget4 := []Widget{
+		chooselabel, subjectbox, newwinbutton,
+	}
+
+	var homework_windowptr *walk.MainWindow
+	choose_homework_window := MainWindow{
+		AssignTo: &homework_windowptr,
+		Size:     Size{100, 100},
+		Title:    "选择课程",
+		Layout:   VBox{},
+		Children: widget4,
+	}
+	choose_homework_window.Run()
+
+}
+func backcode() { //提醒老师下课的后台函数
 	for {
 		nowhour, nowmin, nowsecond := time.Now().Clock()
 		if nowhour == 10 && nowmin == 15 && nowsecond == 00 {
@@ -271,7 +585,7 @@ func backcode() {
 }
 func main() {
 	go backcode()
-	str1 := "今天星期"
+	str1 := "星期"
 	str2 := date_to_string(get_date())
 	var stringBuilder bytes.Buffer
 	stringBuilder.WriteString(str1)
@@ -284,53 +598,22 @@ func main() {
 	a := stringBuilder.String()
 	date := Label{
 		Text: a,
+		Font: Font{
+			"宋体", 20, true, false, false, false,
+		},
+		Alignment: AlignHCenterVCenter,
 	}
-	label1 := Label{
-		Text:          get_class(get_date(), 1),
-		TextAlignment: AlignCenter,
-	}
+	label1 := create_label(1)
+	label2 := create_label(2)
+	label3 := create_label(3)
+	label4 := create_label(4)
+	label5 := create_label(5)
+	label6 := create_label(6)
+	label7 := create_label(7)
+	label8 := create_label(8)
+	label9 := create_label(9)
 
-	label2 := Label{
-		Text:          get_class(get_date(), 2),
-		TextAlignment: AlignCenter,
-	}
-
-	label3 := Label{
-		Text:          get_class(get_date(), 3),
-		TextAlignment: AlignCenter,
-	}
-
-	label4 := Label{
-		Text:          get_class(get_date(), 4),
-		TextAlignment: AlignCenter,
-	}
-
-	label5 := Label{
-		Text:          get_class(get_date(), 5),
-		TextAlignment: AlignCenter,
-	}
-
-	label6 := Label{
-		Text:          get_class(get_date(), 6),
-		TextAlignment: AlignCenter,
-	}
-
-	label7 := Label{
-		Text:          get_class(get_date(), 7),
-		TextAlignment: AlignCenter,
-	}
-
-	label8 := Label{
-		Text:          get_class(get_date(), 8),
-		TextAlignment: AlignCenter,
-	}
-
-	label9 := Label{
-		Text:          get_class(get_date(), 9),
-		TextAlignment: AlignCenter,
-	}
-
-	Settingbutton := PushButton{
+	/* Settingbutton := PushButton{
 		Text: "设置",
 		OnClicked: func() {
 			fmt.Println("clicked")
@@ -340,9 +623,53 @@ func main() {
 	Randombutton := PushButton{
 		Text:      "随机数",
 		OnClicked: func() { random_window() },
-	}
+	} */
+	/* homeworkbutton := PushButton{
+		Text:      "作业布置",
+		OnClicked: func() { choose_homework_window() },
+	} */
 	widget := []Widget{
-		date, label1, label2, label3, label4, label5, label6, label7, label8, label9, Settingbutton, Randombutton,
+		date, label1, label2, label3, label4, label5, label6, label7, label8, label9, /*Settingbutton, Randombutton,  homeworkbutton,*/
+	}
+	menuitem := []MenuItem{
+		Menu{
+			Text: "File",
+			Items: []MenuItem{
+				Action{
+					Text:        "修改课表...",
+					OnTriggered: setting_window,
+				},
+				Action{
+					Text: "随机排座位...",
+					OnTriggered: func() {
+						seat_window()
+					},
+				},
+				Action{
+					Text: "轮换座位...",
+					OnTriggered: func() {
+						cmd3 := exec.Command("./changeseat.exe")
+						cmd3.Run()
+					},
+				},
+			},
+		},
+		Menu{
+			Text: "Function",
+			Items: []MenuItem{
+				Action{
+					Text:        "布置作业...",
+					OnTriggered: choose_homework_window,
+				},
+				Action{
+					Text: "随机数",
+					OnTriggered: func() {
+						cmd := exec.Command("./Random.exe")
+						cmd.Run()
+					},
+				},
+			},
+		},
 	}
 	wd1 := MainWindow{
 		AssignTo: &rootwindow.MainWindow,
@@ -350,10 +677,11 @@ func main() {
 		Size:     Size{WIDTH, HEIGHT},
 		Layout:   VBox{},
 		Font: Font{
-			"微软雅黑", 20, false, false, false, false,
+			"宋体", 16, false, false, false, false,
 		},
-		Children: widget,
-		Icon:     icon,
+		MenuItems: menuitem,
+		Children:  widget,
+		Icon:      icon,
 	}
 	wd1.Run()
 }

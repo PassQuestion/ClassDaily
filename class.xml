@@ -47,7 +47,7 @@
 <Days>
 <Day ID="d1">
 <Class ID="l1">
-<name> 数学 </name>
+<name> 语文 </name>
 </Class>
 <Class ID="l2">
 <name> 物理 </name>
@@ -62,7 +62,7 @@
 <name> 英语 </name>
 </Class>
 <Class ID="l6">
-<name> 政治 </name> 
+<name> 信息技术 </name> 
 </Class>
 <Class ID="l7">
 <name> 语文 </name>
@@ -187,23 +187,6 @@
 <name> 数学 </name>
 </Class>
 <Class ID="l9">
-<name> 班会 </name>
-</Class>
-</Day>
-</Days>
-</root> ID = "l5">
-<name> 物理 </name>
-</Class>
-<Class ID = "l6">
-<name> ͨ通用技术 </name>
-</Class>
-<Class ID = "l7">
-<name> 音乐^美术 </name>
-</Class>
-<Class ID = "l8">
-<name> 数学 </name>
-</Class>
-<Class ID = "l9">
 <name> 班会 </name>
 </Class>
 </Day>
