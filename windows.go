@@ -30,12 +30,6 @@ import (
 	"github.com/lxn/win"
 )
 
-/*定义主窗口大小*/
-const (
-	WIDTH  = 320
-	HEIGHT = 1020
-)
-
 type hwnd struct {
 	*walk.MainWindow
 }
@@ -258,31 +252,43 @@ func create_homework_item(name string) homeworkitem {
 }
 
 type testpaper struct {
-	testepaperbox CheckBox
-	pagebox       ComboBox
-	label         Label
-	noteline      LineEdit
+	testpaperbox    CheckBox
+	pagebox         ComboBox
+	label           Label
+	noteline        LineEdit
+	testpaperboxptr **walk.CheckBox
+	paperpageptr    **walk.ComboBox
+	notelineptr     **walk.LineEdit
 }
 
 func create_testpaper() testpaper {
+	testpaperboxptr := new(*walk.CheckBox)
 	testpaperbox := CheckBox{
-		Text:    "试卷",
-		Checked: false,
+		AssignTo: testpaperboxptr,
+		Text:     "试卷",
+		Checked:  false,
 	}
+	paperpageptr := new(*walk.ComboBox)
 	pagebox := ComboBox{
-		Model: []string{"1", "2", "3", "4", "5", "6"},
+		AssignTo: paperpageptr,
+		Model:    []string{"1", "2", "3", "4", "5", "6"},
 	}
 	label := Label{
 		Text: "张 备注：",
 	}
+	notelineptr := new(*walk.LineEdit)
 	noteline := LineEdit{
+		AssignTo: notelineptr,
 		ReadOnly: false,
 	}
 	item := testpaper{
-		testepaperbox: testpaperbox,
-		pagebox:       pagebox,
-		label:         label,
-		noteline:      noteline,
+		testpaperbox:    testpaperbox,
+		testpaperboxptr: testpaperboxptr,
+		pagebox:         pagebox,
+		paperpageptr:    paperpageptr,
+		label:           label,
+		noteline:        noteline,
+		notelineptr:     notelineptr,
 	}
 	return item
 }
@@ -380,7 +386,7 @@ func homework_window(subject int) {
 	}
 	paper := create_testpaper()
 	widgetitem2 := []Widget{
-		paper.testepaperbox, paper.pagebox, paper.label, paper.noteline,
+		paper.testpaperbox, paper.pagebox, paper.label, paper.noteline,
 	}
 	hsppaper := HSplitter{
 		Children: widgetitem2,
@@ -397,7 +403,6 @@ func homework_window(subject int) {
 			defer homeworkfile.Close()
 			var homeworkstr string
 			var page string
-
 			homeworkstr = sub_to_string(subject+1) + "\n"
 			for j := 0; j < len(homeworkitems); j += 1 {
 				checkboxptr = *homeworkitems[j].checkboxptr
@@ -411,6 +416,18 @@ func homework_window(subject int) {
 					homeworkstr += notelineptr.Text()
 					homeworkstr += "\n" //则加字符串：格式为 {作业} {n}页 {备注} 换行
 				}
+			}
+			paperptr := *paper.testpaperboxptr
+
+			if paperptr.Checked() {
+				homeworkstr += "试卷"
+				paperpage := *paper.paperpageptr
+				page = fmt.Sprintf("%d", paperpage.CurrentIndex()+1)
+				homeworkstr += page
+				homeworkstr += "张 "
+				notelineptr = *paper.notelineptr
+				homeworkstr += notelineptr.Text()
+				homeworkstr += "\n"
 			}
 			writer := bufio.NewWriter(homeworkfile)
 			writer.WriteString(homeworkstr)
@@ -585,7 +602,16 @@ func backcode() { //提醒老师下课的后台函数
 	}
 
 }
+
+/*定义主窗口大小*/
+const (
+	WIDTH  = 320
+	HEIGHT = 1020
+)
+
 func main() {
+	width := win.GetSystemMetrics(win.SM_CXSCREEN) / 6
+	height := win.GetSystemMetrics(win.SM_CYSCREEN) / 20 * 19
 	datefilestring, err := os.ReadFile("./date")
 	if err != nil {
 		walk.MsgBox(walk.App().ActiveForm(), "日期文件错误", "请创建一个名为date的文件。", walk.MsgBoxOK)
@@ -691,7 +717,7 @@ func main() {
 	MainWindow{
 		AssignTo: &rootwindow.MainWindow,
 		Title:    "电子值日生",
-		Size:     Size{WIDTH, HEIGHT},
+		Size:     Size{int(width), int(height)},
 		Layout:   VBox{},
 		Font: Font{
 			"宋体", 16, false, false, false, false,
@@ -701,13 +727,12 @@ func main() {
 		Icon:      icon,
 	}.Create()
 	xScreen := win.GetSystemMetrics(win.SM_CXSCREEN)
-	yScreen := win.GetSystemMetrics(win.SM_CYSCREEN)
 	win.SetWindowPos(
 		rootwindow.Handle(),
 		win.HWND_BOTTOM,
-		xScreen-320, yScreen-1080,
-		WIDTH,
-		HEIGHT,
+		xScreen*5/6, 0,
+		width,
+		height,
 		win.SWP_FRAMECHANGED,
 	)
 	win.ShowWindow(rootwindow.Handle(), win.SW_SHOW)
