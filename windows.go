@@ -1,12 +1,21 @@
 /*
-	前辈您好，我是这段程序的编写者彭思齐。由于学业压力过大，这一个学校思维节的项目可能要停止开发。但是一些模块还没有写完，比如说布置作业模块。这个程序采用golang编写，
-
-是为了使得程序较python更快，更小，采用golang的WindowsGUI库walk。但是由于golang未在学生群体中普及，所以现在没有人帮我继续开发，希望您能将布置作业的模块修改跑通，
-您修改后的版本会成为最终程序的1.0版本。谢谢前辈。
+川大附中IDEA课程节孵化项目：电子值日生（1.0）
+开发者：
+windows.go 彭思齐 约680行有效代码
+自动轮换(节点2).py 符晋豪  41行有效代码 编译为changeseat.exe
+基础随机分组（节点1）.py 符晋豪 25行有效代码 编译为selectseat.exe
+随机抽人（节点2）.py 符晋豪（初版） 彭致远（后续UI修改） 初版共35行有效代码 编译为Random.exe
+管理者： 刘芸朵 宋羿延
+徽标设计： 刘芸朵
+UI设计：黄嘉琪
+记录员：胡懿轩 华胥睿
+测试员：彭致远 许锡川
+文档组：华胥睿 查祉旭 刘芸朵 卓钰轩
 */
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"math/rand"
@@ -18,12 +27,13 @@ import (
 	"github.com/beevik/etree"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
+	"github.com/lxn/win"
 )
 
 /*定义主窗口大小*/
 const (
 	WIDTH  = 320
-	HEIGHT = 720
+	HEIGHT = 1020
 )
 
 type hwnd struct {
@@ -199,11 +209,11 @@ func setting_window() { //setting_window函数，第二阶段的成果 启动在
 /*布置作业模块 第三阶段开发的核心内容，但是控件的指针调用总出问题，希望前辈能够将指针修改正确使这一功能运行*/
 type homeworkitem struct { //定义struct类型，对应每一项作业 格式：“作业项” n页 备注：备注内容（如不写第xx题等）
 	checkbox    CheckBox
-	checkboxptr *walk.CheckBox
+	checkboxptr **walk.CheckBox
 	pagebox     ComboBox
-	pageboxptr  *walk.ComboBox
+	pageboxptr  **walk.ComboBox
 	noteline    LineEdit
-	notelineptr *walk.LineEdit
+	notelineptr **walk.LineEdit
 	pagelabel   Label
 	widget      []Widget
 	checkstatus bool
@@ -211,24 +221,23 @@ type homeworkitem struct { //定义struct类型，对应每一项作业 格式�
 
 func create_homework_item(name string) homeworkitem {
 	bl := false
-	homeworkcheckptr := new(walk.CheckBox)
+	homeworkcheckptr := new(*walk.CheckBox)
 	homeworkbox := CheckBox{
-		AssignTo:       &homeworkcheckptr,
+		AssignTo:       homeworkcheckptr,
 		TextOnLeftSide: true,
 		Text:           name,
 		Name:           name,
 		Checked:        false,
 	}
-	bl = homeworkcheckptr.Checked()
-	pageboxptr := new(walk.ComboBox)
+	pageboxptr := new(*walk.ComboBox)
 	pagebox := ComboBox{
-		AssignTo:     &pageboxptr,
+		AssignTo:     pageboxptr,
 		CurrentIndex: 1,
 		Model:        []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"}, //定义最高20页页数
 	}
-	notelineptr := new(walk.LineEdit)
+	notelineptr := new(*walk.LineEdit)
 	noteline := LineEdit{
-		AssignTo: &notelineptr,
+		AssignTo: notelineptr,
 		ReadOnly: false,
 	}
 	widget := []Widget{
@@ -312,6 +321,8 @@ func sub_to_string(subject int) string {
 }
 
 var checkboxptr = new(walk.CheckBox)
+var pageboxptr = new(walk.ComboBox)
+var notelineptr = new(walk.LineEdit)
 
 func homework_window(subject int) {
 	wd5ptr, err := walk.NewMainWindow()
@@ -378,18 +389,7 @@ func homework_window(subject int) {
 	surebutton := PushButton{
 		Text: "确定",
 		OnClicked: func() {
-			datefilestring, err := os.ReadFile("./date")
-			if err != nil {
-				walk.MsgBox(walk.App().ActiveForm(), "日期文件错误", "请创建一个名为date的文件。", walk.MsgBoxOK)
-				return
-			}
-			y, m, d := time.Now().Date()
-			datestring := fmt.Sprintf("%d%d%d", y, m, d)
-			if string(datefilestring) != datestring {
-				os.Create("./homework")
-				os.Create("./date") //若点击按钮日期等于上次点击按钮日期，则清空上次文件（create方法）
-			}
-			homeworkfile, err1 := os.OpenFile("./homework", os.O_RDWR, 0644)
+			homeworkfile, err1 := os.OpenFile("./homework", os.O_APPEND, 0644)
 			if err1 != nil {
 				walk.MsgBox(walk.App().ActiveForm(), "作业文件错误", "请创建一个名为homework的文件。", walk.MsgBoxOK)
 				return
@@ -400,19 +400,21 @@ func homework_window(subject int) {
 
 			homeworkstr = sub_to_string(subject+1) + "\n"
 			for j := 0; j < len(homeworkitems); j += 1 {
-				checkboxptr = homeworkitems[j].checkboxptr
-				homeworkitems[j].pagebox.AssignTo = &homeworkitems[j].pageboxptr
-				homeworkitems[j].noteline.AssignTo = &homeworkitems[j].notelineptr
+				checkboxptr = *homeworkitems[j].checkboxptr
+				pageboxptr = *homeworkitems[j].pageboxptr
+				notelineptr = *homeworkitems[j].notelineptr
 				if checkboxptr.Checked() { //如果对应作业的checkbox被选中
 					homeworkstr += homeworkitems[j].checkbox.Name
-					page = fmt.Sprintf("%d", homeworkitems[j].pageboxptr.CurrentIndex()+1)
+					page = fmt.Sprintf("%d", pageboxptr.CurrentIndex()+1)
 					homeworkstr += page
-					homeworkstr += "页"
-					homeworkstr += homeworkitems[j].notelineptr.Text()
+					homeworkstr += "页 "
+					homeworkstr += notelineptr.Text()
 					homeworkstr += "\n" //则加字符串：格式为 {作业} {n}页 {备注} 换行
 				}
 			}
-			homeworkfile.WriteString(homeworkstr)
+			writer := bufio.NewWriter(homeworkfile)
+			writer.WriteString(homeworkstr)
+			writer.Flush()
 			wd5ptr.Close()
 		},
 	}
@@ -584,6 +586,20 @@ func backcode() { //提醒老师下课的后台函数
 
 }
 func main() {
+	datefilestring, err := os.ReadFile("./date")
+	if err != nil {
+		walk.MsgBox(walk.App().ActiveForm(), "日期文件错误", "请创建一个名为date的文件。", walk.MsgBoxOK)
+		return
+	}
+	y, m, d := time.Now().Date()
+	datestring := fmt.Sprintf("%d%d%d", y, m, d)
+	if string(datefilestring) != datestring {
+		os.Create("./homework")
+		os.Create("./date") //若点击按钮日期等于上次点击按钮日期，则清空上次文件（create方法）
+
+		os.WriteFile("./date", []byte(datestring), 0643)
+	}
+
 	go backcode()
 	str1 := "星期"
 	str2 := date_to_string(get_date())
@@ -671,7 +687,8 @@ func main() {
 			},
 		},
 	}
-	wd1 := MainWindow{
+	rootwindow.MainWindow = new(walk.MainWindow)
+	MainWindow{
 		AssignTo: &rootwindow.MainWindow,
 		Title:    "电子值日生",
 		Size:     Size{WIDTH, HEIGHT},
@@ -682,6 +699,17 @@ func main() {
 		MenuItems: menuitem,
 		Children:  widget,
 		Icon:      icon,
-	}
-	wd1.Run()
+	}.Create()
+	xScreen := win.GetSystemMetrics(win.SM_CXSCREEN)
+	yScreen := win.GetSystemMetrics(win.SM_CYSCREEN)
+	win.SetWindowPos(
+		rootwindow.Handle(),
+		win.HWND_BOTTOM,
+		xScreen-320, yScreen-1080,
+		WIDTH,
+		HEIGHT,
+		win.SWP_FRAMECHANGED,
+	)
+	win.ShowWindow(rootwindow.Handle(), win.SW_SHOW)
+	rootwindow.Run()
 }
